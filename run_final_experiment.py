@@ -97,38 +97,8 @@ class BoundedHAOAImpr(HAOAImproved):
         return {"best_score": self.best_score, "best_solution": self.best_solution, "convergence_curve": self.convergence_curve}
 
 class BoundedHAOAAdv(HAOAAdvanced):
-    def update_population(self, iteration):
-        progress = iteration / self.max_iterations
-        inertia_weight, adaptive_learning, c1, c2, mutation_strength = 0.95 - 0.6 * progress, 1.8 * (1 - progress), 1.0 - 0.5 * progress, 0.5 + 1.0 * progress, 0.003 * (1 - progress)
-        elite, velocity_limit, domain_range = self.best_solution.copy(), 0.2 * (self.upper_bound - self.lower_bound), self.upper_bound - self.lower_bound
-
-        for i in range(self.population_size):
-            if self.objective_function.actual_executions >= BUDGET: break
-            r1, r2, r3 = self.rng.random(self.dimension), self.rng.random(self.dimension), self.rng.random(self.dimension)
-            local_best = self._get_local_best(i)
-            r1_idx, r2_idx = self.rng.choice([idx for idx in range(self.population_size) if idx != i], size=2, replace=False)
-            exploration = adaptive_learning * r3 * (self.population[r1_idx] - self.population[r2_idx])
-            self.velocity[i] = inertia_weight * self.velocity[i] + c1 * r1 * (local_best - self.population[i]) + c2 * r2 * (elite - self.population[i]) + 0.15 * exploration
-            self.velocity[i] = np.clip(self.velocity[i], -velocity_limit, velocity_limit)
-            new_position = self.population[i] + self.velocity[i] + mutation_strength * self.rng.standard_normal(self.dimension)
-            if self.stagnation_counters[i] > self.k_stag and np.sum(self.velocity[i] ** 2) < 1e-4:
-                if self.rng.random() < 0.5: new_position = self.lower_bound + self.upper_bound - self.population[i]
-                else: new_position = self.population[i] + 0.01 * domain_range * (1 - progress) * self._levy_flight()
-            new_position = np.clip(new_position, self.lower_bound, self.upper_bound)
-            new_fitness = self.objective_function(new_position)
-            if new_fitness < self.fitness_values[i]:
-                self.population[i], self.fitness_values[i], self.stagnation_counters[i] = new_position, new_fitness, 0
-            else:
-                self.velocity[i] = 0.5 * self.velocity[i]
-                self.stagnation_counters[i] += 1
-        self._update_elite()
-        pairwise_dists = []
-        for a in range(self.population_size):
-            for b in range(a + 1, self.population_size):
-                pairwise_dists.append(np.linalg.norm(self.population[a] - self.population[b]))
-        self.diversity_curve.append(np.mean(pairwise_dists) if pairwise_dists else 0.0)
-
     def optimize(self):
+        self.evaluations_limit = BUDGET
         self._update_elite()
         for iteration in range(self.max_iterations):
             if self.objective_function.actual_executions >= BUDGET: break

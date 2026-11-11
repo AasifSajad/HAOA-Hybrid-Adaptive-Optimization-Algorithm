@@ -96,8 +96,8 @@ class HAOAAdvanced:
         progress = iteration / self.max_iterations
         inertia_weight = 0.95 - 0.6 * progress
         adaptive_learning = 1.8 * (1 - progress)
-        c1 = 1.0 - 0.5 * progress
-        c2 = 0.5 + 1.0 * progress
+        c1 = 1.2 * (1 - progress)
+        c2 = 2.2 - 0.8 * progress
         mutation_strength = 0.003 * (1 - progress)
 
         elite = self.best_solution.copy()
@@ -118,8 +118,11 @@ class HAOAAdvanced:
                 [idx for idx in range(self.population_size) if idx != i],
                 size=2, replace=False
             )
-            exploration = adaptive_learning * r3 * (
+            exploration_de = adaptive_learning * r3 * (
                 self.population[r1_idx] - self.population[r2_idx]
+            )
+            exploration_orig = adaptive_learning * self.rng.random(self.dimension) * (
+                self.rng.uniform(self.lower_bound, self.upper_bound, self.dimension) - self.population[i]
             )
 
             # Multi-exemplar guidance
@@ -130,7 +133,8 @@ class HAOAAdvanced:
                 inertia_weight * self.velocity[i]
                 + local_attraction
                 + global_attraction
-                + 0.15 * exploration
+                + 0.10 * exploration_de
+                + 0.05 * exploration_orig
             )
 
             self.velocity[i] = np.clip(
@@ -142,16 +146,18 @@ class HAOAAdvanced:
             mutation = mutation_strength * self.rng.standard_normal(self.dimension)
             new_position = self.population[i] + self.velocity[i] + mutation
 
+            # Late-stage local refinement around elite
+            if progress > 0.75:
+                new_position += 0.04 * (elite - new_position)
+
             # Energy-based stagnation detection & OBL / Lévy escape
             kinetic_energy = np.sum(self.velocity[i] ** 2)
-            if self.stagnation_counters[i] > self.k_stag and kinetic_energy < 1e-4:
+            if self.stagnation_counters[i] > self.k_stag and kinetic_energy < 1e-3:
                 if self.rng.random() < 0.5:
-                    # Opposition-Based Learning (OBL)
                     new_position = self.lower_bound + self.upper_bound - self.population[i]
                 else:
-                    # Lévy flight escape
-                    levy_step = 0.01 * domain_range * (1 - progress) * self._levy_flight()
-                    new_position = self.population[i] + levy_step
+                    levy_step = 0.02 * domain_range * (1 - progress) * self._levy_flight()
+                    new_position += levy_step
 
             new_position = np.clip(
                 new_position,
