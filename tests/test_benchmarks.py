@@ -13,7 +13,8 @@ from HAOA.benchmark_functions.sphere import sphere
     [sphere, rastrigin, ackley, griewank, rosenbrock],
 )
 def test_known_global_optimum_is_zero(function):
-    assert float(function(np.zeros(5))) == pytest.approx(0.0, abs=1e-12)
+    optimum = np.ones(5) if function is rosenbrock else np.zeros(5)
+    assert float(function(optimum)) == pytest.approx(0.0, abs=1e-12)
 
 
 def test_rosenbrock_minimum_at_all_ones():
