@@ -3,6 +3,7 @@ import numpy as np
 
 from HAOA.algorithm.haoa import HAOA as HAOAOriginal
 from HAOA.algorithm.haoa_improved import HAOAImproved
+from HAOA.algorithm.haoa_ml import MLHAOA
 from HAOA.comparison_algorithms.pso import PSO
 from HAOA.comparison_algorithms.de import DifferentialEvolution
 from HAOA.benchmark_functions.sphere import sphere
@@ -18,6 +19,33 @@ def counting_sphere(x, counter_list):
 
 
 class TestHAOAUnit:
+
+    def test_nfe_budget_ml_haoa(self):
+        eval_counter = [0]
+
+        def obj(x):
+            return counting_sphere(x, eval_counter)
+
+        dim = 10
+        pop_size = 30
+        max_iters = 500
+
+        opt = MLHAOA(
+            objective_function=obj,
+            dimension=dim,
+            lower_bound=-100,
+            upper_bound=100,
+            population_size=pop_size,
+            max_iterations=max_iters,
+            random_seed=42,
+            evaluations_limit=15030
+        )
+        res = opt.optimize()
+
+        expected_nfe = pop_size * (max_iters + 1)
+        assert eval_counter[0] == expected_nfe
+        assert res["evaluations_count"] == expected_nfe
+        assert expected_nfe == 15030
 
     def test_nfe_budget_improved_haoa(self):
         eval_counter = [0]

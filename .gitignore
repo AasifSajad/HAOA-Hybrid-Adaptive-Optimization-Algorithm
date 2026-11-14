@@ -13,5 +13,10 @@ __pycache__/
 results/
 HAOA/results/
 
+audit_*.py
+quick_*.py
+test_ackley*.py
+test_final*.py
+analyze_final*.py
 .env
 

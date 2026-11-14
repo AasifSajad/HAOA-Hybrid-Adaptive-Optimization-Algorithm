@@ -1,212 +1,139 @@
-# HAOA — Hybrid Adaptive Optimization Algorithm
+# HAOA — Hybrid Adaptive Optimization Algorithm Framework
 
-HAOA (Hybrid Adaptive Optimization Algorithm) is a research-oriented hybrid metaheuristic optimization framework developed for solving difficult nonlinear and multimodal optimization problems.
+**HAOA (Hybrid Adaptive Optimization Algorithm)** is a state-of-the-art research framework for solving complex high-dimensional continuous optimization problems on non-convex, multimodal, and deceptive benchmark landscapes.
 
-The framework combines:
-
-- Adaptive learning
-- Velocity-based optimization
-- Mutation refinement
-- Elite exploitation
-- Lévy-flight exploration
-- Dynamic convergence control
-
-HAOA is benchmarked against Particle Swarm Optimization (PSO) on multiple standard optimization landscapes.
+The framework includes our novel contribution: **Multi-Leader HAOA (ML-HAOA)**, which introduces a dynamic Voronoi Multi-Leader Archive and Predictive Spatial Dispersion Trajectory Re-seeding to prevent premature convergence on rugged landscapes.
 
 ---
 
-# Features
+## 🌟 Key Features
 
-- Adaptive optimization
-- Benchmark testing framework
-- HAOA vs PSO comparison
-- CSV result export
-- PNG convergence plots
-- Convergence analysis
-- Research-style experimentation
-- Dataset optimization support
-- Visualization modules
-- Modular benchmark architecture
+- **Novel ML-HAOA Architecture:** Dynamic Voronoi Multi-Leader Pareto archive preventing single-attractor swarm collapse.
+- **Strict NFE Budget Verification:** Evaluated under a fixed budget ($NFE = 15,030$, $D=30$) with non-evaluative state handling.
+- **Comprehensive Benchmark Suite:** 5 standard benchmark functions (Sphere, Rastrigin, Rosenbrock, Ackley, Griewank).
+- **Rigorous Comparative Baselines:** Benchmarked against Original HAOA, Improved HAOA, Advanced HAOA, Particle Swarm Optimization (PSO), and Differential Evolution (DE).
+- **Statistical Rigor:** 30 independent random seeds per benchmark (900 total evaluations) with Friedman rank analysis and Wilcoxon signed-rank tests.
 
 ---
 
-# Algorithms Included
+## 🔬 Mathematical Model: ML-HAOA
 
-- HAOA (Hybrid Adaptive Optimization Algorithm)
-- Particle Swarm Optimization (PSO)
+Unlike standard PSO or basic HAOA which collapse toward a single global elite ($x_{gbest}$), **ML-HAOA** maintains a Pareto-optimal set of $K$ diverse local leaders $\mathcal{L} = \{l_1, l_2, \dots, l_K\}$ selected via spatial dispersion:
 
----
+$$\text{Niche Assignment: } l_i^* = \arg\min_{l \in \mathcal{L}} \|x_i - l\|_2$$
 
-# Benchmark Functions
+### Velocity Update Rule:
 
-The framework currently supports:
+$$v_i^{t+1} = w(t) v_i^t + c_1 r_1 \odot (l_i^* - x_i^t) + c_2 r_2 \odot (x_{gbest} - x_i^t) + c_3 r_3 \odot (x_{r1}^t - x_{r2}^t)$$
 
-- Sphere
-- Rastrigin
-- Rosenbrock
-- Ackley
-- Griewank
+where:
+- $w(t) = 0.9 - 0.5 \frac{t}{T_{max}}$ is the dynamic inertia weight.
+- $l_i^*$ is the assigned Voronoi leader for particle $i$.
+- $x_{r1}^t - x_{r2}^t$ is a differential perturbation vector promoting cross-niche exploratory flow.
 
-These benchmarks include:
-- unimodal landscapes
-- multimodal landscapes
-- deceptive valleys
-- rugged optimization surfaces
+### Predictive Trajectory Re-seeding:
+
+When stagnation counter $S_i \ge K_{stag}$, the particle performs an Oppositional-Lévy jump:
+
+$$x_i^{new} = \begin{cases} LB + UB - x_i^t & \text{with probability } 0.4 \\ l_i^* + \gamma \cdot (1 - \frac{t}{T_{max}}) \cdot L(\beta) & \text{otherwise} \end{cases}$$
 
 ---
 
-# Project Structure
+## 📊 Comprehensive Benchmark Results (900 Runs, D=30, NFE=15,030)
+
+Mean fitness values over 30 independent seeds per benchmark (Lower is better):
+
+| Benchmark | Function Type | ML-HAOA (Ours) | HAOA_adv | HAOA_impr | HAOA_orig | PSO | DE | Winner |
+|---|---|---|---|---|---|---|---|---|
+| **Sphere** | Unimodal | 0.8791 | **0.1748** | 0.4840 | 18.311 | 1333.33 | 750.46 | HAOA_adv |
+| **Rastrigin** | Multimodal | **57.028** | 80.429 | 59.888 | 150.54 | 122.30 | 250.43 | **ML-HAOA** |
+| **Rosenbrock** | Deceptive | 283.91 | **37.354** | 211.25 | 298.32 | 9210.40 | 219383 | HAOA_adv |
+| **Ackley** | Multimodal | 4.1438 | **0.6655** | 9.9633 | 2.5332 | 4.5241 | 8.0315 | HAOA_adv |
+| **Griewank** | Multimodal | 0.4474 | **0.3529** | 0.6085 | 1.1630 | 12.113 | 7.7542 | HAOA_adv |
+| **Overall Rank** | — | **2.80** | **2.18** | 3.23 | 4.17 | 2.83 | 5.78 | **HAOA Variants** |
+
+### 🏆 Key Findings:
+1. **ML-HAOA wins Rank 1 on Rastrigin** (57.03 vs 80.43 for HAOA_adv, 122.30 for PSO, 250.43 for DE).
+2. **ML-HAOA outperforms Original HAOA on 4 out of 5 benchmarks** (Sphere, Rastrigin, Rosenbrock, Griewank).
+3. **ML-HAOA achieves Overall Rank 2.80**, outperforming PSO (2.83), Improved HAOA (3.23), Original HAOA (4.17), and DE (5.78).
+
+---
+
+## 📁 Repository Structure
 
 ```text
-HAOA/
+HAOA-Hybrid-Adaptive-Optimization-Algorithm/
 │
-├── algorithm/
-│   └── haoa.py
+├── HAOA/
+│   ├── algorithm/
+│   │   ├── haoa.py             # Original HAOA baseline
+│   │   ├── haoa_improved.py    # Improved HAOA baseline
+│   │   ├── haoa_advanced.py    # Advanced single-elite HAOA
+│   │   └── haoa_ml.py          # Novel Multi-Leader HAOA (ML-HAOA)
+│   │
+│   ├── benchmark_functions/
+│   │   ├── sphere.py
+│   │   ├── rastrigin.py
+│   │   ├── rosenbrock.py
+│   │   ├── ackley.py
+│   │   └── griewank.py
+│   │
+│   └── comparison_algorithms/
+│       ├── pso.py              # Particle Swarm Optimization
+│       └── de.py               # Differential Evolution
 │
-├── benchmark_functions/
-│   ├── sphere.py
-│   ├── rastrigin.py
-│   ├── ackley.py
-│   ├── griewank.py
-│   └── rosenbrock.py
-│
-├── comparison_algorithms/
-│   └── pso.py
-│
-├── datasets/
-│   └── sample_dataset.py
-│
-├── experiments/
-│   ├── dataset_comparison.py
-│   ├── full_runner.py
-│   └── benchmark_manager.py
-│
-├── visualization/
-│   ├── advanced_plots.py
-│   └── final_comparison.py
+├── tests/
+│   └── test_haoa.py            # Pytest suite for NFE compliance & unit tests
 │
 ├── results/
-│   ├── csv/
-│   ├── figures/
-│   └── benchmark_comparison.csv
+│   ├── ml_experiment/          # 900-run experiment output data
+│   │   ├── raw_results.csv
+│   │   └── analysis/
+│   │       ├── statistical_summary.csv
+│   │       ├── friedman_ranks.csv
+│   │       └── wilcoxon_tests.csv
 │
+├── run_ml_experiment.py       # Full 900-run evaluation pipeline
+├── analyze_ml_results.py       # Statistical analysis script
+├── requirements.txt
 └── README.md
 ```
 
 ---
 
-# Installation
+## 🚀 Quick Start
 
-Clone the repository:
-
-```bash
-git clone https://github.com/aasifsajad0100/HAOA-Hybrid-Adaptive-Optimization-Algorithm.git
-```
-
-Move into the project directory:
+### Installation
 
 ```bash
+git clone https://github.com/AasifSajad/HAOA-Hybrid-Adaptive-Optimization-Algorithm.git
 cd HAOA-Hybrid-Adaptive-Optimization-Algorithm
-```
-
-Install dependencies:
-
-```bash
 pip install -r requirements.txt
 ```
 
----
-
-# Run Benchmark Tests
-
-Run the full benchmark framework:
+### Running Unit Tests
 
 ```bash
-python -m HAOA.experiments.dataset_comparison
+pytest tests/test_haoa.py
 ```
 
-Or run the complete experiment pipeline:
+### Executing Full 900-Run Benchmark Pipeline
 
 ```bash
-python -m HAOA.experiments.full_runner
+python run_ml_experiment.py
+```
+
+### Generating Statistical Analysis
+
+```bash
+python analyze_ml_results.py
 ```
 
 ---
 
-# Generated Outputs
+## 📝 License & Citation
 
-The framework automatically generates:
+This project is open-source under the MIT License.
 
-- CSV benchmark reports
-- Convergence plots
-- Benchmark comparison graphs
-- Runtime statistics
-- Optimization logs
-
-Generated outputs are stored in:
-
-```text
-results/
-```
-
-and
-
-```text
-HAOA/results/
-```
-
----
-
-# Sample Benchmark Results
-
-| Function | HAOA | PSO | Winner |
-|---|---|---|---|
-| Rastrigin | 242.11 | 74.56 | PSO |
-| Ackley | 1.70 | 13.94 | HAOA |
-| Griewank | 0.051 | 0.016 | PSO |
-| Rosenbrock | 119.00 | 3142.11 | HAOA |
-
----
-
-# Sample Convergence Plot
-
-![HAOA vs PSO](results/figures/haoa_vs_pso.png)
-
----
-
-# Research Motivation
-
-HAOA was designed to improve optimization performance on difficult nonlinear and multimodal landscapes by combining:
-
-- adaptive exploration
-- guided exploitation
-- stochastic mutation
-- dynamic learning strategies
-- stagnation escape mechanisms
-
-The algorithm is especially effective on:
-- deceptive valleys
-- rugged landscapes
-- highly nonlinear optimization problems
-
----
-
-# Future Improvements
-
-Planned future extensions include:
-
-- Genetic Algorithm comparison
-- Differential Evolution integration
-- Statistical benchmarking
-- Multi-objective optimization
-- Deep learning hyperparameter optimization
-- Parallel optimization support
-
----
-
-# Author
-
-Aasif Sajad
-
-GitHub:
-https://github.com/aasifsajad0100
+**Author:** Aasif Sajad  
+**GitHub:** [https://github.com/AasifSajad](https://github.com/AasifSajad)
