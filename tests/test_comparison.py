@@ -1,9 +1,14 @@
+import csv
 import numpy as np
 import pytest
 
 from HAOA.algorithm.haoa import HAOA
 from HAOA.comparison_algorithms.pso import PSO
-from HAOA.experiments.dataset_comparison import SimplePSO, summarize_paired_scores
+from HAOA.experiments.dataset_comparison import (
+    SimplePSO,
+    run_dataset_test,
+    summarize_paired_scores,
+)
 
 
 def sphere(x):
@@ -30,6 +35,13 @@ def test_pso_same_seed_reproduces_solution_and_curve(optimizer_class):
     assert first["best_score"] == pytest.approx(second["best_score"])
     np.testing.assert_array_equal(first["best_solution"], second["best_solution"])
     np.testing.assert_array_equal(first["convergence_curve"], second["convergence_curve"])
+
+
+def test_same_seed_gives_paired_initial_population():
+    args = (sphere, 4, -3.0, 3.0, 9, 11)
+    haoa = HAOA(*args, random_state=2026)
+    pso = PSO(*args, random_state=2026)
+    np.testing.assert_array_equal(haoa.population, pso.positions)
 
 
 def test_pso_does_not_mutate_global_numpy_rng():
@@ -78,3 +90,19 @@ def test_pso_rejects_invalid_bounds_and_non_finite_objective():
         PSO(sphere, 2, 2.0, 1.0, 5, 4)
     with pytest.raises(ValueError, match="non-finite"):
         PSO(lambda _: float("nan"), 2, -1.0, 1.0, 5, 4, random_state=1).optimize()
+
+
+def test_multiseed_comparison_writes_raw_summary_and_figures(tmp_path):
+    summary = run_dataset_test(
+        seeds=[11, 12], dimension=3, population_size=5,
+        max_iterations=4, output_dir=tmp_path,
+    )
+    assert len(summary) == 5
+    with (tmp_path / "benchmark_comparison_runs.csv").open(newline="", encoding="utf-8") as handle:
+        raw_rows = list(csv.DictReader(handle))
+    assert len(raw_rows) == 10
+    with (tmp_path / "benchmark_comparison.csv").open(newline="", encoding="utf-8") as handle:
+        aggregate_rows = list(csv.DictReader(handle))
+    assert len(aggregate_rows) == 5
+    assert all(int(row["Runs"]) == 2 for row in aggregate_rows)
+    assert len(list(tmp_path.glob("*_comparison.png"))) == 5
