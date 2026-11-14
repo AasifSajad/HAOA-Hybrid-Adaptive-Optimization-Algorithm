@@ -1,212 +1,107 @@
 # HAOA — Hybrid Adaptive Optimization Algorithm
 
-HAOA (Hybrid Adaptive Optimization Algorithm) is a research-oriented hybrid metaheuristic optimization framework developed for solving difficult nonlinear and multimodal optimization problems.
+HAOA is a research-oriented, bounded, population-based minimization algorithm. This repository includes the HAOA implementation, standard numerical benchmark functions, a Particle Swarm Optimization (PSO) baseline, experiment runners, and CSV/plot exporters.
 
-The framework combines:
+## Features
 
-- Adaptive learning
-- Velocity-based optimization
-- Mutation refinement
-- Elite exploitation
-- Lévy-flight exploration
-- Dynamic convergence control
+- Hybrid exploration and elite-directed exploitation
+- Adaptive velocity, mutation, and stagnation-triggered Lévy exploration
+- Scalar and per-dimension bounds
+- Reproducible HAOA and PSO runs through isolated random generators
+- Sphere, Rastrigin, Rosenbrock, Ackley, and Griewank benchmarks
+- Paired multi-seed HAOA/PSO comparison with raw results, aggregate statistics, and convergence plots
 
-HAOA is benchmarked against Particle Swarm Optimization (PSO) on multiple standard optimization landscapes.
-
----
-
-# Features
-
-- Adaptive optimization
-- Benchmark testing framework
-- HAOA vs PSO comparison
-- CSV result export
-- PNG convergence plots
-- Convergence analysis
-- Research-style experimentation
-- Dataset optimization support
-- Visualization modules
-- Modular benchmark architecture
-
----
-
-# Algorithms Included
-
-- HAOA (Hybrid Adaptive Optimization Algorithm)
-- Particle Swarm Optimization (PSO)
-
----
-
-# Benchmark Functions
-
-The framework currently supports:
-
-- Sphere
-- Rastrigin
-- Rosenbrock
-- Ackley
-- Griewank
-
-These benchmarks include:
-- unimodal landscapes
-- multimodal landscapes
-- deceptive valleys
-- rugged optimization surfaces
-
----
-
-# Project Structure
+## Repository layout
 
 ```text
 HAOA/
-│
-├── algorithm/
-│   └── haoa.py
-│
+├── algorithm/haoa.py
 ├── benchmark_functions/
-│   ├── sphere.py
-│   ├── rastrigin.py
-│   ├── ackley.py
-│   ├── griewank.py
-│   └── rosenbrock.py
-│
-├── comparison_algorithms/
-│   └── pso.py
-│
-├── datasets/
-│   └── sample_dataset.py
-│
+├── comparison_algorithms/pso.py
 ├── experiments/
+│   ├── benchmark_manager.py
+│   ├── csv_exporter.py
 │   ├── dataset_comparison.py
-│   ├── full_runner.py
-│   └── benchmark_manager.py
-│
-├── visualization/
-│   ├── advanced_plots.py
-│   └── final_comparison.py
-│
+│   └── full_runner.py
 ├── results/
-│   ├── csv/
-│   ├── figures/
-│   └── benchmark_comparison.csv
-│
-└── README.md
+└── visualization/
 ```
 
----
+## Requirements
 
-# Installation
-
-Clone the repository:
+Python 3.9 or later is recommended.
 
 ```bash
-git clone https://github.com/aasifsajad0100/HAOA-Hybrid-Adaptive-Optimization-Algorithm.git
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\\Scripts\\activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-Move into the project directory:
+## Run the complete HAOA benchmark suite
 
-```bash
-cd HAOA-Hybrid-Adaptive-Optimization-Algorithm
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-# Run Benchmark Tests
-
-Run the full benchmark framework:
-
-```bash
-python -m HAOA.experiments.dataset_comparison
-```
-
-Or run the complete experiment pipeline:
+Run from the repository root:
 
 ```bash
 python -m HAOA.experiments.full_runner
 ```
 
----
+The runner evaluates five benchmark functions and writes summary/convergence CSV files and plots under HAOA/results.
 
-# Generated Outputs
+## Run a paired HAOA-versus-PSO study
 
-The framework automatically generates:
-
-- CSV benchmark reports
-- Convergence plots
-- Benchmark comparison graphs
-- Runtime statistics
-- Optimization logs
-
-Generated outputs are stored in:
-
-```text
-results/
+```bash
+python -m HAOA.experiments.dataset_comparison
 ```
 
-and
+By default, the comparison runs 30 paired seeds (0–29) on all five benchmark functions, using the same objective, dimension, bounds, population size, and iteration budget for both algorithms. For each seed, both optimizers receive the same seed value; their random streams remain independent.
 
-```text
-HAOA/results/
+Useful options:
+
+```bash
+python -m HAOA.experiments.dataset_comparison --runs 50 --dimension 30 --population-size 40 --iterations 200
 ```
 
----
+The comparison produces:
 
-# Sample Benchmark Results
+- `HAOA/results/benchmark_comparison_runs.csv`: every benchmark/seed result and paired score difference
+- `HAOA/results/benchmark_comparison_summary.csv`: means, standard deviations, medians, wins/ties, paired median difference, and a 95% percentile-bootstrap interval
+- `HAOA/results/benchmark_comparison.csv`: compatibility summary with the established score columns plus aggregate fields
+- One mean best-so-far convergence plot per benchmark
 
-| Function | HAOA | PSO | Winner |
-|---|---|---|---|
-| Rastrigin | 242.11 | 74.56 | PSO |
-| Ackley | 1.70 | 13.94 | HAOA |
-| Griewank | 0.051 | 0.016 | PSO |
-| Rosenbrock | 119.00 | 3142.11 | HAOA |
+A negative paired difference (HAOA minus PSO) favours HAOA for that seed. The bootstrap interval describes uncertainty in the paired median difference; it is not a substitute for a pre-registered statistical protocol or a formal omnibus test. Do not infer general superiority from one benchmark, one seed, or execution time alone. For publication-quality claims, report the complete experimental configuration and consider additional non-parametric tests and effect sizes.
 
----
+## Use HAOA directly
 
-# Sample Convergence Plot
+```python
+import numpy as np
+from HAOA.algorithm.haoa import HAOA
 
-![HAOA vs PSO](results/figures/haoa_vs_pso.png)
+def sphere(x):
+    return np.sum(x ** 2)
 
----
+optimizer = HAOA(
+    objective_function=sphere,
+    dimension=10,
+    lower_bound=-5.12,
+    upper_bound=5.12,
+    population_size=40,
+    max_iterations=200,
+    random_state=42,
+)
+result = optimizer.optimize()
+print(result["best_score"])
+print(result["best_solution"])
+```
 
-# Research Motivation
+The objective function must accept a one-dimensional NumPy array and return a finite scalar. Both optimizers minimize the objective and enforce the supplied bounds.
 
-HAOA was designed to improve optimization performance on difficult nonlinear and multimodal landscapes by combining:
+## Tests
 
-- adaptive exploration
-- guided exploitation
-- stochastic mutation
-- dynamic learning strategies
-- stagnation escape mechanisms
+```bash
+python -m pytest
+```
 
-The algorithm is especially effective on:
-- deceptive valleys
-- rugged landscapes
-- highly nonlinear optimization problems
+## Research note
 
----
-
-# Future Improvements
-
-Planned future extensions include:
-
-- Genetic Algorithm comparison
-- Differential Evolution integration
-- Statistical benchmarking
-- Multi-objective optimization
-- Deep learning hyperparameter optimization
-- Parallel optimization support
-
----
-
-# Author
-
-Aasif Sajad
-
-GitHub:
-https://github.com/aasifsajad0100
+Benchmark outcomes depend on seed, search budget, dimensionality, bounds, and implementation details. This repository reports repeated-run distributions and paired comparisons; it does not assume HAOA is universally better than PSO.
