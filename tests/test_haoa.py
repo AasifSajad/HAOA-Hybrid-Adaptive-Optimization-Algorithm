@@ -1,5 +1,5 @@
-import pytest
 import numpy as np
+import pytest
 
 from HAOA.algorithm.haoa import HAOA as HAOAOriginal
 from HAOA.algorithm.haoa_improved import HAOAImproved
@@ -267,3 +267,22 @@ class TestHAOAUnit:
         best_sol = res["best_solution"]
 
         assert sphere(best_sol) == pytest.approx(best_score)
+
+
+def test_optimizer_returns_complete_finite_result():
+    def test_obj(x):
+        return float(np.sum(np.asarray(x) ** 2))
+    opt = HAOAOriginal(
+        objective_function=test_obj,
+        dimension=4,
+        lower_bound=-3.0,
+        upper_bound=3.0,
+        population_size=12,
+        max_iterations=15
+    )
+    result = opt.optimize()
+    assert np.isfinite(result["best_score"])
+    assert result["best_solution"].shape == (4,)
+    assert len(result["convergence_curve"]) == 15
+    assert np.all(np.isfinite(result["convergence_curve"]))
+    assert np.all(np.diff(result["convergence_curve"]) <= 1e-12)
