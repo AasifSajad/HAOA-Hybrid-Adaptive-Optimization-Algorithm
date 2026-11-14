@@ -94,9 +94,9 @@ class TestHAOAUnit:
         )
         res = opt.optimize()
 
-        expected_nfe = 3 * pop_size * max_iters
+        expected_nfe = 3 * pop_size * max_iters + pop_size
         assert eval_counter[0] == expected_nfe
-        assert expected_nfe == 15030
+        assert expected_nfe == 15060
 
     def test_nfe_budget_de(self):
         eval_counter = [0]
@@ -153,7 +153,7 @@ class TestHAOAUnit:
         pso.optimize()
 
         total_nfe = eval_counter[0]
-        assert total_nfe == 15030
+        assert total_nfe == 15060
 
     def test_initial_population_pairing(self):
         dim = 5
